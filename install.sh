@@ -27,6 +27,7 @@ then
           systemctl disable fix-stale-handle.service
      fi
 elif [[ ${enable_systemd} == "yes" ]]
+then
      # Install Systemd Service
      cp systemd/fix-stale-handle.service /etc/systemd/system/fix-stale-handle.service
 
