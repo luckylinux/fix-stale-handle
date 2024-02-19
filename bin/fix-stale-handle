@@ -79,6 +79,8 @@ do
         echo "Re-mounting $share"
         mount $share
         sleep 5
+    else
+        echo "Share $share appears normal. No action required."
     fi
 done
 
