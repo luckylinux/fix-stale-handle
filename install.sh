@@ -26,7 +26,7 @@ then
           # Disable Daemon
           systemctl disable fix-stale-handle.service
      fi
-elif
+elif [[ ${enable_systemd} == "yes" ]]
      # Install Systemd Service
      cp systemd/fix-stale-handle.service /etc/systemd/system/fix-stale-handle.service
 
