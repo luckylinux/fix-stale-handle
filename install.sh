@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configure to use Systemd Service
-enable_systemd="yes" # "yes" or "no"
+enable_systemd="no" # "yes" or "no"
 
 # Install Script into the required folders
 cp bin/fix-stale-handle /usr/local/bin/fix-stale-handle
@@ -26,7 +26,7 @@ then
           # Disable Daemon
           systemctl disable fix-stale-handle.service
      fi
-else
+elif
      # Install Systemd Service
      cp systemd/fix-stale-handle.service /etc/systemd/system/fix-stale-handle.service
 
@@ -38,4 +38,8 @@ else
 
      # Start Systemd Service
      systemctl restart fix-stale-handle.service
+else
+     # Invalid Configuration Option
+     echo "Invalid Configuration Option for <enable_systemd>. Aborting !"
+     exit 1
 fi
