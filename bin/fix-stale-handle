@@ -75,3 +75,6 @@ do
         sleep 5
     fi
 done
+
+# Exit Gracefully
+exit 0
