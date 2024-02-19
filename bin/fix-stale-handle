@@ -17,7 +17,7 @@ mapfile -t shares < <( findmnt -l --types nfs --output target | tail --lines +2 
 for share in "${shares[@]}"
 do
     # Echo
-    echo "Processing NFS Share <$share>"
+    echo "Analysing NFS Share <$share>"
 
     # Assume it's NOT stale
     stale=0
@@ -31,9 +31,14 @@ do
     # Return Code
     ret=$?
 
-    # Echo Return Code
-    echo "Return Code of <timeout ${default_timeout}s $command $share>: $ret"
+    # Echo Return Code in case of Abnormalities (Return Code != 0)
+    if [[ $ret -ne 0 ]]
+    then
+         echo "Return Code of <timeout ${default_timeout}s $command $share>: $ret"
+    fi
 
+
+    # Analyze Return Codes & Output
     if [[ $ret -eq 124 ]]
     then
         # Command timed out
