@@ -26,7 +26,7 @@ do
     description=""
 
     # Attempt to get list of files in share
-    output=$(timeout ${default_timeout}s $command $share)
+    output=$(timeout ${default_timeout}s $command $share 2>&1)
 
     # Return Code
     ret=$?
