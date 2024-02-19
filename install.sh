@@ -14,9 +14,6 @@ then
      # If already installed remove Service File and disable Service itself
      if [[ -f "/etc/systemd/system/fix-stale-handle.service" ]]
      then
-          # Remove Service File
-          rm -f /etc/systemd/system/fix-stale-handle.service
-
           # Reload Daemon
           systemctl daemon-reload
 
@@ -25,6 +22,9 @@ then
 
           # Disable Daemon
           systemctl disable fix-stale-handle.service
+
+          # Remove Service File
+          rm -f /etc/systemd/system/fix-stale-handle.service
      fi
 elif [[ ${enable_systemd} == "yes" ]]
 then
