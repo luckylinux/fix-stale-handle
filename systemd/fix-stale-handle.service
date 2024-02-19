@@ -1,0 +1,9 @@
+[Unit]
+ Description=Fix Stale Handles
+
+[Service]
+ ExecStart=/usr/local/bin/fix-stale-handle start
+ ExecStop=/usr/local/bin/fix-stale-handle stop
+
+[Install]
+ WantedBy=multi-user.target
