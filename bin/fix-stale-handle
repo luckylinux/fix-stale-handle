@@ -55,7 +55,7 @@ do
         # Analyse Output
         # Transform to lowercase first
         # If it contains "stale file handle" then we must also flag the share
-        if [[ "${output,,}" == "*stale file handle*" ]]
+        if [[ "$output" == *"Stale file handle"* ]]
         then
              # IS Stale file handle
              stale=1
