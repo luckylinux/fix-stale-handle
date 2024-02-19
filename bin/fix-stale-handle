@@ -28,8 +28,11 @@ do
     # Attempt to get list of files in share
     output=$(timeout ${default_timeout}s $command $share)
 
-    # Return code
+    # Return Code
     ret=$?
+
+    # Echo Return Code
+    echo "Return Code of <timeout ${default_timeout}s $command $share>: $ret"
 
     if [[ $ret -eq 124 ]]
     then
