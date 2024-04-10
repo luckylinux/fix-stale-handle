@@ -11,7 +11,7 @@ shopt -s nocasematch
 
 # Find all filesystems of type NFS
 # Ignore first Line (Field Names) - start at line #2
-mapfile -t shares < <( findmnt -l --types nfs --output target | tail --lines +2 )
+mapfile -t shares < <( findmnt -l -s --types nfs --output target | tail --lines +2 )
 
 # For each share
 for share in "${shares[@]}"
