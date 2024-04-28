@@ -92,6 +92,12 @@ do
         echo "Re-mounting $share"
         mount $share
         sleep 5
+    elif [[ ! mountpoint -q "${share}" ]]
+    then
+        echo "Share ${share} was not previously mounted. Maybe a remount attempt after the previous stale file handle failed ?"
+        echo "Remounting now ..."
+        mount $share
+        sleep 5
     else
         echo "Share $share appears normal. No action required."
     fi
