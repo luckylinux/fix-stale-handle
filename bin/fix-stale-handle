@@ -3,21 +3,24 @@
 # Define default timeout
 default_timeout=10 # [s]
 
-# Define command
+# Define Command
 command="ls -l"
+
+# Define Filesystem Types
+types="nfs,cifs"
 
 # Ignore case in string comparisons
 shopt -s nocasematch
 
-# Find all filesystems of type NFS
+# Find all filesystems of selected Types
 # Ignore first Line (Field Names) - start at line #2
-mapfile -t shares < <( findmnt -l -s --types nfs --output target | tail --lines +2 )
+mapfile -t shares < <( findmnt -l -s --types "${types}" --output target | tail --lines +2 )
 
 # For each share
 for share in "${shares[@]}"
 do
     # Echo
-    echo "Analysing NFS Share <$share>"
+    echo "Analysing Network Share <$share>"
 
     # Assume it's NOT stale
     stale=0
