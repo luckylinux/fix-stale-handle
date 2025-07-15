@@ -4,9 +4,14 @@ Detect and Fix NFS Stale Handle, that can occur due to e.g.:
 - NFS Server Restarting/Rebooting
 
 # Installation
-Run
+## With CRON
 ```
-./install.sh
+./setup.sh cron
+```
+
+## With Systemd
+```
+./setup.sh systemd
 ```
 
 # Working Principle
@@ -18,6 +23,8 @@ If the NFS mount point has been mounted with the `hard` mount option on the clie
 The installer installs a Crontab File in /etc/cron.d/fix-stale-handle which executes every 5 minutes and scans for NFS shares.
 
 # Systemd
-Note: not implemented yet. Crontab is typically sufficient, but Systemd might have additional Journalctl Logging Options for easier Debugging.
+Systemd has additional Logging Options for easier Debugging compared to Crontab (`journalctl`) and that's done on a per-Service basis.
 
-The installer installs a Systemd File in /etc/systemd/system/fix-stale-handle.
+The installer installs a Systemd Service in `/etc/systemd/system/fix-stale-handle.service`.
+
+The installer installs a Systemd Timer in `/etc/systemd/system/fix-stale-handle.timer`.
