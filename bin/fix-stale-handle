@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# Input Arguments
+action=${1-""}
+
+# If Systemd is stopping the Script, don't do anything else
+if [[ "${action}" == "stop" ]]
+then
+    exit 0
+fi
+
 # Define default timeout
 default_timeout=10 # [s]
 
