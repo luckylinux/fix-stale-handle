@@ -13,14 +13,98 @@ types="nfs,cifs"
 shopt -s nocasematch
 
 # Find all filesystems of selected Types
-# Ignore first Line (Field Names) - start at line #2
-mapfile -t shares < <( findmnt -l -s --types "${types}" --output target | tail --lines +2 )
+# Ignore first Line by feeding Option -n (--no-headins)
+mapfile -t shares < <( findmnt -n -l -s --types "${types}" --output TARGET )
 
-# For each share
-for share in "${shares[@]}"
-do
+# Get Children Dependencies
+get_children_dependencies() {
+    # Input Arguments
+    local lmountpoint="$1"
+
+    mapfile -t matches < <( findmnt -n -l -s --output SOURCE,TARGET )
+
+    for match in "${matches[@]}"
+    do
+        # Get Source
+        fs_source=$(echo "${match}" | awk '{print $1}')
+
+        # Get Target
+        fs_target=$(echo "${match}" | awk '{print $2}')
+
+        # Exact Match
+        if [[ "${lmountpoint}" == "${fs_source}" ]]
+        then
+           # Echo Value
+           echo "${fs_target}"
+        elif [[ "${fs_source}" == *"${lmountpoint}/"* ]]
+        then
+           # Echo Value
+           echo "${fs_target}"
+        fi
+    done
+}
+
+# Get Parent Dependencies
+get_parent_dependencies() {
+    # Input Arguments
+    local lmountpoint="$1"
+
+    findmnt -n -l -s --output SOURCE "${lmountpoint}"
+}
+
+# Remount Dependencies
+fix_children_dependencies() {
+    # Input Arguments
+    local lparent="$1"
+
+    # Get list of Children Dependencies
+    local lchildren
+    local lchild
+    mapfile -t lchildren < <( get_children_dependencies "${lparent}" )
+
+    # Loop over Children
+    for lchild in "${lchildren[@]}"
+    do
+        # Fix Stale
+        fix_stale "${lchild}" "2"
+    done
+}
+
+# Format Indent for Dependencies
+format_indent() {
+    # Input Arguments
+    local llevel="$1"
+
+    # Declare Sting
+    local lstr
+
+    # Initialize String
+    lstr=""
+
+    # Add Tabs for each Level
+    for i in $(seq 0 "${llevel}")
+    do
+        lstr+="\t"
+    done
+
+    # Return Value
+    echo -e "${lstr}"
+}
+
+# Fix Stale
+fix_stale() {
+    # Input Arguments
+    local lshare="$1"
+    local llevel=${2-"1"}
+
+    # Get Indent String
+    local lindent1
+    local lindent2
+    lindent1=$(format_indent $((llevel+0)))
+    lindent2=$(format_indent $((llevel+1)))
+
     # Echo
-    echo "Analysing Network Share <$share>"
+    echo -e "${lindent1}Analysing Network Share <${lshare}>"
 
     # Assume it's NOT stale
     stale=0
@@ -29,7 +113,7 @@ do
     description=""
 
     # Attempt to get list of files in share
-    output=$(timeout ${default_timeout}s $command $share 2>&1)
+    output=$(timeout ${default_timeout}s $command "${lshare}" 2>&1)
 
     # Return Code
     ret=$?
@@ -37,7 +121,7 @@ do
     # Echo Return Code in case of Abnormalities (Return Code != 0)
     if [[ $ret -ne 0 ]]
     then
-         echo "Return Code of <timeout ${default_timeout}s $command $share>: $ret"
+         echo -e "${lindent2}Return Code of <timeout ${default_timeout}s $command ${lshare}>: $ret"
     fi
 
 
@@ -61,7 +145,7 @@ do
         # Command was executed successfully and exit code is normal
         # NOT stale file handle
         stale=0
-        descriptio="Return Code was Normal"
+        description="Return Code was Normal"
     else
         # Analyse Output
         # Transform to lowercase first
@@ -84,25 +168,40 @@ do
     # Check if Stale
     if [[ $stale -eq 1 ]]
     then
-        echo "$description"
-        echo "Unmounting $share"
-        umount -f -l $share
+        echo -e "${lindent2}${description}"
+        echo -e "${lindent2}Unmounting ${lshare}"
+        umount -f -l "${lshare}"
         sleep 5
 
-        echo "Re-mounting $share"
-        mount $share
+        echo -e "${lindent2}Re-mounting ${lshare}"
+        mount "${lshare}"
         sleep 5
     else
        if mountpoint -q "${share}"
        then
-          echo "Share $share appears normal and mounted. No action required."
+          echo -e "${lindent2}Share ${lshare} appears normal and mounted. No action required."
        else
-          echo "Share ${share} was not previously mounted. Maybe a remount attempt after the previous stale file handle failed ?"
-          echo "Remounting now ..."
-          mount $share
+          echo -e "${lindent2}Share ${lshare} was not previously mounted. Maybe a remount attempt after the previous stale file handle failed ?"
+          echo -e "${lindent2}Remounting now ..."
+          mount "${lshare}"
           sleep 5
        fi
     fi
+
+    # Fix Stale for Children Dependencies
+    # This will execute Recursively
+    fix_children_dependencies "${lshare}"
+}
+
+# For each share
+for share in "${shares[@]}"
+do
+    # Fix Stale for Share itself
+    fix_stale "${share}"
+
+    # Fix Stale for Children Dependencies
+    # This will NOT execute Recursively
+    # fix_children_dependencies "${share}"
 done
 
 # Exit Gracefully
