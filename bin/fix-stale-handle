@@ -56,17 +56,22 @@ get_parent_dependencies() {
 fix_children_dependencies() {
     # Input Arguments
     local lparent="$1"
+    local lparentlevel=${2-"1"}
 
     # Get list of Children Dependencies
     local lchildren
     local lchild
     mapfile -t lchildren < <( get_children_dependencies "${lparent}" )
 
+    # Determine Children Level
+    local lchildlevel
+    lchildlevel=$((lparentlevel+1))
+
     # Loop over Children
     for lchild in "${lchildren[@]}"
     do
         # Fix Stale
-        fix_stale "${lchild}" "2"
+        fix_stale "${lchild}" "${lchildlevel}"
     done
 }
 
@@ -190,7 +195,7 @@ fix_stale() {
 
     # Fix Stale for Children Dependencies
     # This will execute Recursively
-    fix_children_dependencies "${lshare}"
+    fix_children_dependencies "${lshare}" "${llevel}"
 }
 
 # For each share
