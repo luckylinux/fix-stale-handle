@@ -59,12 +59,6 @@ then
      # Reload Systemd Daemon
      systemctl daemon-reload
 
-     # Enable Systemd Service
-     systemctl enable fix-stale-handle.service
-
-     # Start Systemd Service
-     systemctl restart fix-stale-handle.service
-
      # Enable Systemd Timer
      systemctl enable fix-stale-handle.timer
 
@@ -78,6 +72,6 @@ then
      fi
 else
      # Invalid Configuration Option
-     echo "Invalid Configuration Option for <enable_systemd>. Aborting !"
+     echo "Invalid Configuration Option for <scheduler>. Aborting !"
      exit 1
 fi
