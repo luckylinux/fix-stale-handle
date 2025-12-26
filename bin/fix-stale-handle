@@ -9,14 +9,17 @@ then
     exit 0
 fi
 
-# Define default timeout
+# Define default Timeout
 default_timeout=10 # [s]
+
+# Define default kill_after Timeout
+default_timeout_kill_after=20 # [s]
 
 # Define Command
 command="ls -l"
 
 # Define Filesystem Types
-types="nfs,cifs"
+types="nfs,cifs,fuse"
 
 # Ignore case in string comparisons
 shopt -s nocasematch
@@ -127,7 +130,7 @@ fix_stale() {
     description=""
 
     # Attempt to get list of files in share
-    output=$(timeout ${default_timeout}s $command "${lshare}" 2>&1)
+    output=$(timeout --kill-after=${default_timeout_kill_after}s ${default_timeout}s $command "${lshare}" 2>&1)
 
     # Return Code
     ret=$?
