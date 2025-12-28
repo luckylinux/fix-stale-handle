@@ -15,10 +15,10 @@ default_timeout=10 # [s]
 # Define default kill_after Timeout
 default_timeout_kill_after=20 # [s]
 
-# Enable search based on FSTAB ?
+# Enable search based on /etc/fstab ?
 enable_fstab_search="yes"
 
-# Enable search based on mtab ?
+# Enable search based on /etc/mtab (/proc/self/mounts) ?
 enable_mtab_search="yes"
 
 # Enable search based on Kernel (/proc/self/mountinfo) ?
@@ -44,6 +44,7 @@ get_children_dependencies() {
     # k: kernel
     local ltype=${2-"s"}
 
+    # Get List of Shares
     mapfile -t matches < <( findmnt -n -l -"${ltype}" --output SOURCE,TARGET )
 
     for match in "${matches[@]}"
@@ -78,7 +79,8 @@ get_parent_dependencies() {
     # k: kernel
     local ltype=${2-"s"}
 
-    findmnt -n -l -"${ltype}" --output SOURCE "${lmountpoint}"
+    # Get List of Parent Dependencies
+    mapfile -t lparents < <( findmnt -n -l -"${ltype}" --output SOURCE "${lmountpoint}" )
 }
 
 # Remount Dependencies
@@ -87,10 +89,16 @@ fix_children_dependencies() {
     local lparent="$1"
     local lparentlevel=${2-"0"}
 
-    # Get list of Children Dependencies
+    # Type of Search:
+    # s: /etc/fstab
+    # m: /etc/mtab
+    # k: kernel
+    local ltype=${3-"s"}
+
+    # Get List of Children Dependencies
     local lchildren
     local lchild
-    mapfile -t lchildren < <( get_children_dependencies "${lparent}" )
+    mapfile -t lchildren < <( get_children_dependencies "${lparent}" "${ltype}" )
 
     # Determine Children Level
     local lchildlevel
@@ -100,7 +108,7 @@ fix_children_dependencies() {
     for lchild in "${lchildren[@]}"
     do
         # Fix Stale
-        fix_stale "${lchild}" "${lchildlevel}"
+        fix_stale "${lchild}" "${lchildlevel}" "${ltype}"
     done
 }
 
@@ -130,6 +138,12 @@ fix_stale() {
     # Input Arguments
     local lshare="$1"
     local llevel=${2-"0"}
+
+    # Type of Search:
+    # s: /etc/fstab
+    # m: /etc/mtab
+    # k: kernel
+    local ltype=${3-"s"}
 
     # Get Indent String
     local lindent1
@@ -226,6 +240,7 @@ fix_stale() {
     fix_children_dependencies "${lshare}" "${llevel}"
 }
 
+# Fix Toplevel Issues
 fix_toplevel() {
     # Type of Search:
     # s: /etc/fstab
@@ -241,7 +256,7 @@ fix_toplevel() {
     for share in "${shares[@]}"
     do
         # Fix Stale for Share itself
-        fix_stale "${share}"
+        fix_stale "${share}" "0" "${ltype}"
 
         # Fix Stale for Children Dependencies
         # This will NOT execute Recursively
@@ -251,18 +266,27 @@ fix_toplevel() {
 
 if [[ "${enable_fstab_search}" == "yes" ]]
 then
+    # Echo
+    echo "Scan Mounts using /etc/fstab"
+
     # Fix searching /etc/fstab
     fix_toplevel "s"
 fi
 
 if [[ "${enable_mtab_search}" == "yes" ]]
 then
+    # Echo
+    echo "Scan Mounts using /etc/mtab (/proc/self/mounts)"
+
     # Fix searching /etc/mtab
     fix_toplevel "m"
 fi
 
 if [[ "${enable_kernel_search}" == "yes" ]]
 then
+    # Echo
+    echo "Scan Mounts using /proc/self/mountinfo"
+
     # Fix searching kernel
     fix_toplevel "k"
 fi
