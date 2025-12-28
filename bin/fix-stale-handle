@@ -15,6 +15,15 @@ default_timeout=10 # [s]
 # Define default kill_after Timeout
 default_timeout_kill_after=20 # [s]
 
+# Enable search based on FSTAB ?
+enable_fstab_search="yes"
+
+# Enable search based on mtab ?
+enable_mtab_search="yes"
+
+# Enable search based on Kernel (/proc/self/mountinfo) ?
+enable_kernel_search="yes"
+
 # Define Command
 command="ls -l"
 
@@ -24,16 +33,18 @@ types="nfs,cifs,fuse"
 # Ignore case in string comparisons
 shopt -s nocasematch
 
-# Find all filesystems of selected Types
-# Ignore first Line by feeding Option -n (--no-headins)
-mapfile -t shares < <( findmnt -n -l -s --types "${types}" --output TARGET )
-
 # Get Children Dependencies
 get_children_dependencies() {
     # Input Arguments
     local lmountpoint="$1"
 
-    mapfile -t matches < <( findmnt -n -l -s --output SOURCE,TARGET )
+    # Type of Search:
+    # s: /etc/fstab
+    # m: /etc/mtab
+    # k: kernel
+    local ltype=${2-"s"}
+
+    mapfile -t matches < <( findmnt -n -l -"${ltype}" --output SOURCE,TARGET )
 
     for match in "${matches[@]}"
     do
@@ -61,7 +72,13 @@ get_parent_dependencies() {
     # Input Arguments
     local lmountpoint="$1"
 
-    findmnt -n -l -s --output SOURCE "${lmountpoint}"
+    # Type of Search:
+    # s: /etc/fstab
+    # m: /etc/mtab
+    # k: kernel
+    local ltype=${2-"s"}
+
+    findmnt -n -l -"${ltype}" --output SOURCE "${lmountpoint}"
 }
 
 # Remount Dependencies
@@ -141,7 +158,6 @@ fix_stale() {
          echo -e "${lindent2}Return Code of <timeout ${default_timeout}s $command ${lshare}>: $ret"
     fi
 
-
     # Analyze Return Codes & Output
     if [[ $ret -eq 124 ]]
     then
@@ -210,16 +226,46 @@ fix_stale() {
     fix_children_dependencies "${lshare}" "${llevel}"
 }
 
-# For each share
-for share in "${shares[@]}"
-do
-    # Fix Stale for Share itself
-    fix_stale "${share}"
+fix_toplevel() {
+    # Type of Search:
+    # s: /etc/fstab
+    # m: /etc/mtab
+    # k: kernel
+    local ltype=${2-"s"}
 
-    # Fix Stale for Children Dependencies
-    # This will NOT execute Recursively
-    # fix_children_dependencies "${share}"
-done
+    # Find all filesystems of selected Types
+    # Ignore first Line by feeding Option -n (--no-headins)
+    mapfile -t shares < <( findmnt -n -l -"${ltype}" --types "${types}" --output TARGET )
+
+    # For each share
+    for share in "${shares[@]}"
+    do
+        # Fix Stale for Share itself
+        fix_stale "${share}"
+
+        # Fix Stale for Children Dependencies
+        # This will NOT execute Recursively
+        # fix_children_dependencies "${share}"
+    done
+}
+
+if [[ "${enable_fstab_search}" == "yes" ]]
+then
+    # Fix searching /etc/fstab
+    fix_toplevel "s"
+fi
+
+if [[ "${enable_mtab_search}" == "yes" ]]
+then
+    # Fix searching /etc/mtab
+    fix_toplevel "m"
+fi
+
+if [[ "${enable_kernel_search}" == "yes" ]]
+then
+    # Fix searching kernel
+    fix_toplevel "k"
+fi
 
 # Exit Gracefully
 exit 0
