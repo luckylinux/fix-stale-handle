@@ -246,7 +246,7 @@ fix_toplevel() {
     # s: /etc/fstab
     # m: /etc/mtab
     # k: kernel
-    local ltype=${2-"s"}
+    local ltype=${1-"s"}
 
     # Find all filesystems of selected Types
     # Ignore first Line by feeding Option -n (--no-headins)
